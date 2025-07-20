@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Tableau de bord</h5>
+            </div>
+            <div class="card-body">
+                <p>Bienvenue, {{ session['username'] }}. Vous êtes connecté en tant que {{ session['role'] }}.</p>
+                
+                {% if session['role'] == 'employee' %}
+                    <a href="{{ url_for('submit_report') }}" class="btn btn-primary">Soumettre un rapport</a>
+                {% endif %}
+                
+                {% if session['role'] == 'manager' %}
+                    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-primary">Tableau de bord manager</a>
+                {% endif %}
+                
+                <a href="{{ url_for('chat') }}" class="btn btn-secondary">Chat</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

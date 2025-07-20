@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Tableau de bord du gestionnaire</h5>
+                        <span class="badge bg-light text-dark">
+                            Connecté en tant que: {{ session.username }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <!-- Reports Section -->
+                    <div class="mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4>Rapports des employés</h4>
+                            <div class="alert alert-info mb-0 py-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nombre de rapports: {{ reports|length }}
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Heure Soumission</th>
+                                        <th>Employé</th>
+                                        <th>Stock Matin</th>
+                                        <th>Valeur (BIF)</th>
+                                        <th>Articles Entrants</th>
+                                        <th>Valeur (BIF)</th>
+                                        <th>Articles Vendus</th>
+                                        <th>Valeur (BIF)</th>
+                                        <th>Stock Restant</th>
+                                        <th>Valeur (BIF)</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if reports %}
+                                        {% for report in reports %}
+                                        <tr>
+                                            <td>{{ report.report_date }}</td>
+                                            <td>{{ report.timestamp.split(' ')[1][:5] }}</td>
+                                            <td>{{ report.username }}</td>
+                                            <td>{{ report.morning_stock }}</td>
+                                            <td class="text-end">{{ "{:,.2f}".format(report.morning_stock_value) }} BIF</td>
+                                            <td>{{ report.incoming_items }}</td>
+                                            <td class="text-end">{{ "{:,.2f}".format(report.incoming_items_value) }} BIF</td>
+                                            <td>{{ report.sold_items }}</td>
+                                            <td class="text-end">{{ "{:,.2f}".format(report.sold_items_value) }} BIF</td>
+                                            <td>{{ report.remaining_stock }}</td>
+                                            <td class="text-end">{{ "{:,.2f}".format(report.remaining_stock_value) }} BIF</td>
+                                            <td>
+                                                <form action="{{ url_for('delete_report', report_id=report.id) }}" method="POST" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport?')">
+                                                        <i class="fas fa-trash me-1"></i> Supprimer
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="12" class="text-center py-4 text-muted">
+                                                <i class="fas fa-exclamation-circle me-2"></i>
+                                                Aucun rapport disponible
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="row mb-5">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h5 class="card-title text-success">
+                                        <i class="fas fa-money-bill-wave me-2"></i>Ventes Total
+                                    </h5>
+                                    <p class="h3 text-end">{{ "{:,.2f}".format(total_sold_value) }} BIF</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">
+                                        <i class="fas fa-boxes me-2"></i>Stock Actuel
+                                    </h5>
+                                    <p class="h3 text-end">{{ "{:,.2f}".format(current_stock_value) }} BIF</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info">
+                                        <i class="fas fa-truck-loading me-2"></i>Entrées Total
+                                    </h5>
+                                    <p class="h3 text-end">{{ "{:,.2f}".format(total_incoming_value) }} BIF</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Management -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Gestion des Employés</h4>
+                        <div class="row">
+                            {% for employee in employees %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ employee.username }}</h5>
+                                        <div class="mb-3">
+                                            <label class="form-label">Taux Salaire (BIF/rapport)</label>
+                                            <div class="input-group">
+                                                <input type="number" 
+                                                       id="rate-{{ employee.id }}" 
+                                                       value="{{ employee.salary_rate or 0 }}" 
+                                                       class="form-control">
+                                                <button class="btn btn-outline-primary" 
+                                                        onclick="updateRate({{ employee.id }})">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary w-100 mb-2"
+                                                onclick="calculateSalary({{ employee.id }})">
+                                            Calculer Salaire
+                                        </button>
+                                        <div id="salary-result-{{ employee.id }}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('chat') }}" class="btn btn-secondary">
+                            <i class="fas fa-comments me-2"></i>Chat avec Employés
+                        </a>
+                        <button class="btn btn-info" onclick="refreshData()">
+                            <i class="fas fa-redo me-2"></i>Actualiser les Données
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update salary rate
+function updateRate(userId) {
+    const newRate = document.getElementById(`rate-${userId}`).value;
+    fetch(`/update_salary_rate/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rate: parseFloat(newRate) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Taux mis à jour avec succès!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Erreur lors de la mise à jour');
+    });
+}
+
+// Calculate salary
+function calculateSalary(userId) {
+    const rate = document.getElementById(`rate-${userId}`).value;
+    fetch(`/calculate_salary/${userId}`)
+    .then(response => response.json())
+    .then(data => {
+        const resultDiv = document.getElementById(`salary-result-${userId}`);
+        resultDiv.innerHTML = `
+            <div class="alert alert-success mt-2">
+                <div class="d-flex justify-content-between">
+                    <span>Rapports: ${data.report_count}</span>
+                    <span>Taux: ${rate} BIF</span>
+                </div>
+                <hr>
+                <div class="fw-bold text-center h5">
+                    Salaire: ${(data.report_count * rate).toFixed(2)} BIF
+                </div>
+            </div>`;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById(`salary-result-${userId}`).innerHTML = `
+            <div class="alert alert-danger mt-2">
+                Erreur de calcul
+            </div>`;
+    });
+}
+
+// Refresh page data
+function refreshData() {
+    window.location.reload();
+}
+
+// Show alert message
+function showAlert(type, message) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show fixed-top mx-3 mt-3`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.prepend(alert);
+    
+    setTimeout(() => {
+        alert.classList.remove('show');
+        setTimeout(() => alert.remove(), 150);
+    }, 3000);
+}
+</script>
+
+<style>
+.table th {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.table td {
+    vertical-align: middle;
+}
+.fixed-top {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+}
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

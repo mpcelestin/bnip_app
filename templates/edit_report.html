@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Edit Report</title></head>
+<body>
+  <h2>Edit Report ID {{ report.id }}</h2>
+  <form method="POST">
+    <label>Stock Morning:</label><br>
+    <input type="number" name="stock_morning" value="{{ report.stock_morning }}" required><br>
+    <label>Stock Incoming:</label><br>
+    <input type="number" name="stock_incoming" value="{{ report.stock_incoming }}" required><br>
+    <label>Stock Sold:</label><br>
+    <input type="number" name="stock_sold" value="{{ report.stock_sold }}" required><br>
+    <label>Stock Remaining:</label><br>
+    <input type="number" name="stock_remaining" value="{{ report.stock_remaining }}" required><br>
+    <button type="submit">Update Report</button>
+  </form>
+  <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>
